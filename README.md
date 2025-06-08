@@ -54,7 +54,7 @@ cd filament
 
 A provided batch script automates:
 
-* Initializing the MSVC environment.
+* Initializing the MSVC environment. (search for x64 Native Tools Command Prompt for VS 2022 in your windows search)
 * Cleaning previous builds.
 * Configuring CMake to use MSVC + Ninja.
 * Building with Ninja.
