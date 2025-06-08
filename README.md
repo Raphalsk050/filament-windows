@@ -63,44 +63,29 @@ Save the following as `build.bat` in the **root** of the cloned `filament` folde
 
 ```bat
 @echo off
-REM build.bat – Bootstraps MSVC environment and builds Filament using Ninja
+REM build.bat – Configures and builds Filament using MSVC cl.exe + Ninja
 
-REM 1) Must run from any Command Prompt (no need to open VS developer prompt manually)
-REM    Script locates Visual Studio using vswhere and sets environment.
-
-REM 2) Locate vswhere.exe
-set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-if not exist "%VSWHERE%" (
-  echo [Error] vswhere.exe not found at "%VSWHERE%"
-  echo Install the Visual Studio Installer or update this path.
-  pause
-  exit /b 1
-)
-for /f "tokens=*" %%i in ('""%VSWHERE%" -latest -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath"') do set "VS_INSTALL=%%i"
-if not defined VS_INSTALL (
-  echo [Error] Could not detect Visual Studio installation path.
+REM 1) Deve ser executado no “x64 Native Tools Command Prompt for VS”
+if not defined VCToolsInstallDir (
+  echo [Error] Run this script from the x64 Native Tools Command Prompt.
   pause
   exit /b 1
 )
 
-REM 3) Initialize MSVC x64 environment
-call "%VS_INSTALL%\VC\Auxiliary\Build\vcvars64.bat"
-if %ERRORLEVEL% neq 0 (
-  echo [Error] Failed to initialize MSVC environment.
-  pause
-  exit /b %ERRORLEVEL%
-)
-
-REM 4) Clean previous build
+REM 2) Limpa build anterior
 cd /d "%~dp0"
 if exist out rd /s /q out
 
-REM 5) Create build directory and enter it
-set BUILD_DIR=%~dp0out
+REM 3) Prepara diretório e PATH
+set SCRIPT_DIR=%~dp0
+set BUILD_DIR=%SCRIPT_DIR%out
 mkdir "%BUILD_DIR%"
 cd /d "%BUILD_DIR%"
 
-REM 6) Configure CMake to use MSVC + Ninja
+REM Garante que o cl.exe do MSVC venha primeiro no PATH
+set PATH=%VCToolsInstallDir%bin\Hostx64\x64;%PATH%
+
+REM 4) Chama o CMake com MSVC + Ninja
 cmake .. -G "Ninja" ^
   -DCMAKE_C_COMPILER=cl.exe ^
   -DCMAKE_CXX_COMPILER=cl.exe ^
@@ -110,20 +95,23 @@ cmake .. -G "Ninja" ^
   -DFILAMENT_BUILD_APPS=ON ^
   -DFILAMENT_BUILD_TESTS=OFF
 if %ERRORLEVEL% neq 0 (
+  echo.
   echo [Error] CMake configuration failed!
   pause
   exit /b %ERRORLEVEL%
 )
 
-REM 7) Build with Ninja
+REM 5) Compila
 ninja -j %NUMBER_OF_PROCESSORS%
 if %ERRORLEVEL% neq 0 (
+  echo.
   echo [Error] Build failed!
   pause
   exit /b %ERRORLEVEL%
 )
 
-echo [Success] Filament built successfully in "%BUILD_DIR%\\bin" and "%BUILD_DIR%\\lib"
+echo.
+echo [Success] Filament built in "%BUILD_DIR%\bin" and "%BUILD_DIR%\lib".
 pause
 ```
 
